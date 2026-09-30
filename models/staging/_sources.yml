@@ -1,0 +1,28 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Synthetic ATS extract created by scripts/create_sample_data.py.
+    schema: raw
+    tables:
+      - name: requisitions
+        description: One row per requisition (one position). Raw dates, no status flags.
+        columns:
+          - name: requisition_id
+            data_tests:
+              - unique
+              - not_null
+          - name: job_family
+            data_tests:
+              - not_null
+          - name: site
+            data_tests:
+              - not_null
+          - name: approved_date
+            description: Date the requisition was approved. Time to fill starts here.
+            data_tests:
+              - not_null
+          - name: offer_accepted_date
+            description: >
+              Date the first offer was accepted. Null if no offer had been accepted
+              when the extract was pulled. Can be later than the reporting date.

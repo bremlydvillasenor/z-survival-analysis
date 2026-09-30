@@ -1,0 +1,14 @@
+# Python / uv
+.venv/
+__pycache__/
+.ruff_cache/
+
+# dbt
+target/
+logs/
+dbt_packages/
+.user.yml
+
+# DuckDB database (recreated by scripts/create_sample_data.py and dbt build)
+data/*.duckdb
+data/*.duckdb.wal

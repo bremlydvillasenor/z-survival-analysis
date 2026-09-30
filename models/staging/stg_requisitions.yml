@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: stg_requisitions
+    description: Requisitions with clean types. One row per requisition.
+    columns:
+      - name: requisition_id
+        data_tests:
+          - unique
+          - not_null

@@ -1,0 +1,19 @@
+name: time_to_fill_survival
+version: "1.0.0"
+profile: time_to_fill_survival
+
+model-paths: ["models"]
+test-paths: ["tests"]
+
+vars:
+  # The reporting ("as of") date for the whole workflow. It is defined only here.
+  # dbt writes it into the mart column analysis_as_of_date, and the Python
+  # analysis reads it back from that column.
+  analysis_as_of_date: "2026-05-31"
+
+models:
+  time_to_fill_survival:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

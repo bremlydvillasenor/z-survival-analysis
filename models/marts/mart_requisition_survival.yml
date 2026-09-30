@@ -1,0 +1,82 @@
+version: 2
+
+models:
+  - name: mart_requisition_survival
+    description: >
+      One row per requisition approved on or before the reporting date
+      (var analysis_as_of_date). Python uses duration_days and event_observed
+      from this table directly and does not recalculate them.
+    columns:
+      - name: requisition_id
+        data_tests:
+          - unique
+          - not_null
+      - name: job_family
+        data_tests:
+          - not_null
+      - name: site
+        data_tests:
+          - not_null
+      - name: approved_date
+        description: Start of time to fill.
+        data_tests:
+          - not_null
+      - name: offer_accepted_date
+        description: >
+          Source value, kept for auditing. It can be later than
+          analysis_as_of_date. Such a late acceptance is not a fill event in
+          this analysis. Use event_observed and duration_days instead.
+      - name: analysis_as_of_date
+        description: The reporting date. The same value on every row.
+        data_tests:
+          - not_null
+      - name: observation_end_date
+        description: >
+          offer_accepted_date if the offer was accepted on or before the
+          reporting date, otherwise the reporting date.
+        data_tests:
+          - not_null
+      - name: duration_days
+        description: observation_end_date - approved_date, in calendar days.
+        data_tests:
+          - not_null
+      - name: event_observed
+        description: 1 = filled by the reporting date. 0 = still open (right-censored).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+      - name: status_as_of_date
+        description: Filled or Open, derived from the dates above.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Filled", "Open"]
+
+unit_tests:
+  - name: cutoff_rules_for_event_flag_and_duration
+    description: >
+      Hand-made examples around the reporting date 2026-05-31. An acceptance
+      on the reporting date counts as a fill. An acceptance after it does not.
+      A requisition approved after the reporting date is excluded.
+    model: mart_requisition_survival
+    overrides:
+      vars:
+        analysis_as_of_date: "2026-05-31"
+    given:
+      - input: ref('stg_requisitions')
+        rows:
+          - {requisition_id: "EX-FILLED", job_family: "Sales", site: "Austin", approved_date: "2026-03-01", offer_accepted_date: "2026-04-10"}
+          - {requisition_id: "EX-FILLED-ON-CUTOFF", job_family: "Sales", site: "Austin", approved_date: "2026-05-01", offer_accepted_date: "2026-05-31"}
+          - {requisition_id: "EX-FILLED-AFTER-CUTOFF", job_family: "Sales", site: "Dublin", approved_date: "2026-04-15", offer_accepted_date: "2026-06-05"}
+          - {requisition_id: "EX-OPEN", job_family: "Sales", site: "Dublin", approved_date: "2026-04-01", offer_accepted_date: null}
+          - {requisition_id: "EX-APPROVED-AFTER-CUTOFF", job_family: "Sales", site: "Dublin", approved_date: "2026-06-03", offer_accepted_date: null}
+    expect:
+      rows:
+        - {requisition_id: "EX-FILLED", observation_end_date: "2026-04-10", duration_days: 40, event_observed: 1, status_as_of_date: "Filled"}
+        - {requisition_id: "EX-FILLED-ON-CUTOFF", observation_end_date: "2026-05-31", duration_days: 30, event_observed: 1, status_as_of_date: "Filled"}
+        - {requisition_id: "EX-FILLED-AFTER-CUTOFF", observation_end_date: "2026-05-31", duration_days: 46, event_observed: 0, status_as_of_date: "Open"}
+        - {requisition_id: "EX-OPEN", observation_end_date: "2026-05-31", duration_days: 60, event_observed: 0, status_as_of_date: "Open"}

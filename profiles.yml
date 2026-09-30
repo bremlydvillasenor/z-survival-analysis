@@ -1,0 +1,10 @@
+# dbt finds this file because it sits in the folder where you run dbt.
+# The DuckDB path is relative to that folder (the project root).
+time_to_fill_survival:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: data/recruitment.duckdb
+      schema: analytics
+      threads: 1
